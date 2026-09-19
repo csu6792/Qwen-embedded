@@ -1,0 +1,2023 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qwen3 Embedding 0.6B Playground</title>
+
+<style>
+*{box-sizing:border-box}
+
+:root{
+  --bg:#0b0d12;
+  --card:#12161d;
+  --card2:#171c24;
+  --border:#29313d;
+  --text:#f1f5f9;
+  --muted:#8d98a8;
+  --accent:#8b5cf6;
+  --green:#22c55e;
+  --yellow:#f59e0b;
+  --red:#ef4444;
+}
+
+body{
+  margin:0;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 20% 0%,rgba(139,92,246,.14),transparent 30%),
+    var(--bg);
+  color:var(--text);
+  font-family:
+    system-ui,-apple-system,BlinkMacSystemFont,
+    "Segoe UI","Noto Sans TC",sans-serif;
+}
+
+.container{
+  width:min(1100px,calc(100% - 28px));
+  margin:auto;
+  padding:36px 0 60px;
+}
+
+header{
+  margin-bottom:26px;
+}
+
+h1{
+  margin:0;
+  font-size:clamp(28px,5vw,46px);
+  line-height:1.1;
+  letter-spacing:-.04em;
+}
+
+.subtitle{
+  color:var(--muted);
+  line-height:1.7;
+  margin:12px 0 0;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.full{
+  grid-column:1/-1;
+}
+
+.card{
+  background:rgba(18,22,29,.94);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px;
+}
+
+h2{
+  margin:0 0 14px;
+  font-size:16px;
+}
+
+label{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:600;
+  margin-bottom:7px;
+}
+
+input,
+select,
+textarea{
+  width:100%;
+  background:#0e1218;
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:11px;
+  font:inherit;
+  outline:none;
+}
+
+input,
+select{
+  height:43px;
+}
+
+textarea{
+  min-height:175px;
+  resize:vertical;
+  line-height:1.6;
+}
+
+textarea:focus,
+input:focus,
+select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(139,92,246,.12);
+}
+
+.instruction{
+  min-height:100px;
+}
+
+.row{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.field{
+  flex:1;
+  min-width:180px;
+}
+
+button{
+  border:0;
+  border-radius:10px;
+  padding:11px 16px;
+  background:var(--accent);
+  color:white;
+  font:inherit;
+  font-weight:700;
+  cursor:pointer;
+  transition:.15s;
+}
+
+button:hover{
+  filter:brightness(1.1);
+  transform:translateY(-1px);
+}
+
+button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+  transform:none;
+}
+
+button.secondary{
+  background:#252c37;
+}
+
+.toolbar{
+  display:flex;
+  gap:9px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+
+.status{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--muted);
+  font-size:13px;
+  margin-top:14px;
+  min-height:20px;
+}
+
+.dot{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:var(--muted);
+  flex:none;
+}
+
+.dot.ok{
+  background:var(--green);
+  box-shadow:0 0 12px rgba(34,197,94,.6);
+}
+
+.dot.warn{
+  background:var(--yellow);
+}
+
+.dot.err{
+  background:var(--red);
+}
+
+.badges{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+
+.badge{
+  border:1px solid var(--border);
+  background:#10151c;
+  border-radius:999px;
+  padding:5px 10px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.badge strong{
+  color:var(--text);
+  margin-left:4px;
+}
+
+.progress{
+  display:none;
+  margin-top:14px;
+}
+
+.progress-bar{
+  height:8px;
+  background:#202631;
+  border-radius:99px;
+  overflow:hidden;
+}
+
+.progress-inner{
+  width:0;
+  height:100%;
+  background:var(--accent);
+  transition:width .15s;
+}
+
+.progress-info{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:6px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.hint{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.6;
+  margin-top:9px;
+}
+
+.warning{
+  margin-top:13px;
+  padding:12px;
+  border:1px solid rgba(245,158,11,.35);
+  background:rgba(245,158,11,.07);
+  color:#d9c28e;
+  border-radius:10px;
+  font-size:12px;
+  line-height:1.6;
+}
+
+.score-box{
+  text-align:center;
+  padding:25px 10px;
+}
+
+.score{
+  font-size:clamp(55px,10vw,90px);
+  line-height:1;
+  font-weight:800;
+  letter-spacing:-.06em;
+}
+
+.score-label{
+  color:var(--muted);
+  margin-top:10px;
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  margin-top:18px;
+}
+
+.stat{
+  padding:13px;
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:10px;
+}
+
+.stat-label{
+  color:var(--muted);
+  font-size:11px;
+  margin-bottom:6px;
+}
+
+.stat-value{
+  font-size:15px;
+  font-weight:700;
+  word-break:break-word;
+}
+
+.vector{
+  max-height:280px;
+  overflow:auto;
+  padding:13px;
+  background:#090c11;
+  border:1px solid var(--border);
+  border-radius:10px;
+  color:#b9c3d0;
+  font-family:
+    "SFMono-Regular",Consolas,
+    "Liberation Mono",monospace;
+  font-size:11px;
+  line-height:1.6;
+  white-space:pre-wrap;
+  word-break:break-all;
+}
+
+.batch-result{
+  margin-top:8px;
+  padding:13px;
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:12px;
+  align-items:center;
+}
+
+.batch-number{
+  font-size:11px;
+  color:var(--muted);
+  margin-bottom:4px;
+}
+
+.batch-text{
+  font-size:13px;
+  line-height:1.5;
+}
+
+.batch-score{
+  font-size:20px;
+  font-weight:800;
+}
+
+footer{
+  margin-top:25px;
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.7;
+}
+
+footer a{
+  color:#a78bfa;
+  text-decoration:none;
+}
+
+code{
+  color:#c4b5fd;
+}
+
+@media(max-width:760px){
+  .container{
+    width:calc(100% - 18px);
+    padding-top:22px;
+  }
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .full{
+    grid-column:auto;
+  }
+
+  .stats{
+    grid-template-columns:1fr 1fr;
+  }
+
+  textarea{
+    min-height:150px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+  <h1>Qwen3 Embedding 0.6B</h1>
+  <p class="subtitle">
+    Browser-side embedding playground。
+    使用 Transformers.js + ONNX，優先 WebGPU，失敗時可使用 WASM。
+    不需要後端。
+  </p>
+</header>
+
+<div class="grid">
+
+<!-- MODEL -->
+<section class="card full">
+
+<h2>① Model</h2>
+
+<div class="row">
+
+  <div class="field">
+    <label>Model</label>
+    <input
+      value="onnx-community/Qwen3-Embedding-0.6B-ONNX"
+      readonly>
+  </div>
+
+  <div class="field" style="max-width:220px">
+    <label>Quantization</label>
+    <select id="dtype">
+      <option value="q8" selected>Q8 Recommended</option>
+      <option value="fp16">FP16</option>
+      <option value="fp32">FP32</option>
+    </select>
+  </div>
+
+  <div class="field" style="max-width:220px">
+    <label>Device</label>
+    <select id="device">
+      <option value="auto" selected>Auto</option>
+      <option value="webgpu">WebGPU</option>
+      <option value="wasm">WASM / CPU</option>
+    </select>
+  </div>
+
+</div>
+
+<div class="toolbar">
+
+  <button id="loadBtn">
+    Load Model
+  </button>
+
+  <button
+    id="clearModelBtn"
+    class="secondary"
+    disabled>
+    Clear Model
+  </button>
+
+</div>
+
+<div class="badges">
+
+  <div class="badge">
+    WebGPU:
+    <strong id="webgpuStatus">Checking...</strong>
+  </div>
+
+  <div class="badge">
+    Runtime:
+    <strong id="runtimeStatus">Not loaded</strong>
+  </div>
+
+</div>
+
+<div class="status">
+
+  <span id="statusDot" class="dot"></span>
+
+  <span id="statusText">
+    Ready
+  </span>
+
+</div>
+
+<div
+  id="progress"
+  class="progress">
+
+  <div class="progress-bar">
+    <div
+      id="progressInner"
+      class="progress-inner">
+    </div>
+  </div>
+
+  <div class="progress-info">
+
+    <span id="progressFile">
+      Preparing...
+    </span>
+
+    <span id="progressPercent">
+      0%
+    </span>
+
+  </div>
+
+</div>
+
+<div class="warning">
+  第一次載入模型需要從 Hugging Face 下載模型檔案。
+  下載完成後瀏覽器會快取模型，之後通常不需要重新完整下載。
+</div>
+
+</section>
+
+
+<!-- INSTRUCTION -->
+<section class="card full">
+
+<h2>② Query Instruction</h2>
+
+<label>
+  Qwen3 Query Instruction
+</label>
+
+<textarea
+  id="instruction"
+  class="instruction">Given a search query, retrieve relevant passages that best answer the query</textarea>
+
+<div class="hint">
+  Query 會自動組成：
+  <code>Instruct: ...</code> +
+  <code>Query: ...</code>
+  <br>
+  Document 不會加入 instruction。
+</div>
+
+</section>
+
+
+<!-- QUERY -->
+<section class="card">
+
+<h2>③ Query / Text A</h2>
+
+<label>
+  Query
+</label>
+
+<textarea
+  id="textA"
+  placeholder="輸入你的 Query...">高雄有哪些適合親子旅遊的景點？</textarea>
+
+</section>
+
+
+<!-- DOCUMENT -->
+<section class="card">
+
+<h2>④ Document / Text B</h2>
+
+<label>
+  Document
+</label>
+
+<textarea
+  id="textB"
+  placeholder="輸入要比較的 Document...">高雄有壽山動物園、駁二藝術特區、衛武營國家藝術文化中心等適合親子一起前往的景點。</textarea>
+
+</section>
+
+
+<!-- ACTION -->
+<section class="card full">
+
+<div class="toolbar">
+
+  <button
+    id="embedBtn"
+    disabled>
+    Generate Embeddings
+  </button>
+
+  <button
+    id="swapBtn"
+    class="secondary">
+    Swap A / B
+  </button>
+
+  <button
+    id="clearTextBtn"
+    class="secondary">
+    Clear
+  </button>
+
+</div>
+
+</section>
+
+
+<!-- SCORE -->
+<section class="card full">
+
+<h2>⑤ Cosine Similarity</h2>
+
+<div class="score-box">
+
+  <div
+    id="score"
+    class="score">
+    —
+  </div>
+
+  <div class="score-label">
+    Cosine Similarity
+  </div>
+
+</div>
+
+<div class="stats">
+
+  <div class="stat">
+    <div class="stat-label">
+      Embedding Dimension
+    </div>
+    <div
+      id="dimension"
+      class="stat-value">
+      —
+    </div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-label">
+      Inference Time
+    </div>
+    <div
+      id="inferenceTime"
+      class="stat-value">
+      —
+    </div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-label">
+      Device
+    </div>
+    <div
+      id="usedDevice"
+      class="stat-value">
+      —
+    </div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-label">
+      Dtype
+    </div>
+    <div
+      id="usedDtype"
+      class="stat-value">
+      —
+    </div>
+  </div>
+
+</div>
+
+</section>
+
+
+<!-- VECTOR A -->
+<section class="card">
+
+<h2>⑥ Embedding A</h2>
+
+<div
+  id="vectorA"
+  class="vector">
+尚未產生 embedding
+</div>
+
+<div class="toolbar">
+
+<button
+  id="downloadA"
+  class="secondary"
+  disabled>
+Download JSON
+</button>
+
+</div>
+
+</section>
+
+
+<!-- VECTOR B -->
+<section class="card">
+
+<h2>⑦ Embedding B</h2>
+
+<div
+  id="vectorB"
+  class="vector">
+尚未產生 embedding
+</div>
+
+<div class="toolbar">
+
+<button
+  id="downloadB"
+  class="secondary"
+  disabled>
+Download JSON
+</button>
+
+</div>
+
+</section>
+
+
+<!-- BATCH -->
+<section class="card full">
+
+<h2>⑧ Batch Semantic Search Test</h2>
+
+<div class="hint">
+  每一行是一個 Document。
+  系統會把 Query 與所有 Document 做 embedding，
+  再依 Cosine Similarity 排序。
+</div>
+
+<textarea
+  id="batchInput"
+  style="margin-top:12px;min-height:180px">高雄有壽山動物園，適合帶小朋友參觀。
+台北101是台北著名的地標。
+台南有許多歷史古蹟與傳統美食。
+高雄駁二藝術特區位於鹽埕區，是熱門文化景點。
+台灣中央氣象署負責提供天氣預報。</textarea>
+
+<div class="toolbar">
+
+<button
+  id="batchBtn"
+  disabled>
+Run Batch Search
+</button>
+
+</div>
+
+<div id="batchResults"></div>
+
+</section>
+
+</div>
+
+
+<footer>
+
+Powered by
+<a
+  href="https://huggingface.co/onnx-community/Qwen3-Embedding-0.6B-ONNX"
+  target="_blank">
+Qwen3-Embedding-0.6B-ONNX
+</a>
++
+<a
+  href="https://huggingface.co/docs/transformers.js"
+  target="_blank">
+Transformers.js
+</a>
+
+<br>
+
+All inference runs locally in your browser.
+
+</footer>
+
+</div>
+
+
+<script type="module">
+
+import {
+  pipeline,
+  env
+}
+from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2";
+
+
+/* =========================================================
+   CONFIG
+========================================================= */
+
+const MODEL =
+  "onnx-community/Qwen3-Embedding-0.6B-ONNX";
+
+env.allowLocalModels = false;
+env.useBrowserCache = true;
+
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let extractor = null;
+let currentDevice = null;
+let currentDtype = null;
+
+let embeddingA = null;
+let embeddingB = null;
+
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const $ = id =>
+  document.getElementById(id);
+
+const loadBtn =
+  $("loadBtn");
+
+const clearModelBtn =
+  $("clearModelBtn");
+
+const embedBtn =
+  $("embedBtn");
+
+const batchBtn =
+  $("batchBtn");
+
+const dtype =
+  $("dtype");
+
+const device =
+  $("device");
+
+const instruction =
+  $("instruction");
+
+const textA =
+  $("textA");
+
+const textB =
+  $("textB");
+
+const batchInput =
+  $("batchInput");
+
+const score =
+  $("score");
+
+const dimension =
+  $("dimension");
+
+const inferenceTime =
+  $("inferenceTime");
+
+const usedDevice =
+  $("usedDevice");
+
+const usedDtype =
+  $("usedDtype");
+
+const vectorA =
+  $("vectorA");
+
+const vectorB =
+  $("vectorB");
+
+const statusText =
+  $("statusText");
+
+const statusDot =
+  $("statusDot");
+
+const progress =
+  $("progress");
+
+const progressInner =
+  $("progressInner");
+
+const progressFile =
+  $("progressFile");
+
+const progressPercent =
+  $("progressPercent");
+
+const webgpuStatus =
+  $("webgpuStatus");
+
+const runtimeStatus =
+  $("runtimeStatus");
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function setStatus(
+  text,
+  type="normal"
+){
+
+  statusText.textContent =
+    text;
+
+  statusDot.className =
+    "dot";
+
+  if(type==="ok")
+    statusDot.classList.add("ok");
+
+  if(type==="warn")
+    statusDot.classList.add("warn");
+
+  if(type==="err")
+    statusDot.classList.add("err");
+}
+
+
+/* =========================================================
+   WEBGPU
+========================================================= */
+
+async function checkWebGPU(){
+
+  if(!("gpu" in navigator)){
+
+    webgpuStatus.textContent =
+      "Unavailable";
+
+    return false;
+  }
+
+  try{
+
+    const adapter =
+      await navigator.gpu.requestAdapter();
+
+    if(!adapter){
+
+      webgpuStatus.textContent =
+        "Unavailable";
+
+      return false;
+    }
+
+    webgpuStatus.textContent =
+      "Available";
+
+    return true;
+
+  }catch(e){
+
+    webgpuStatus.textContent =
+      "Unavailable";
+
+    return false;
+  }
+}
+
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+function progressCallback(data){
+
+  if(!data)
+    return;
+
+  if(data.status==="initiate"){
+
+    progress.style.display =
+      "block";
+
+    progressInner.style.width =
+      "0%";
+
+    progressPercent.textContent =
+      "0%";
+
+    progressFile.textContent =
+      data.file || "Loading...";
+  }
+
+  if(data.status==="progress"){
+
+    progress.style.display =
+      "block";
+
+    const p =
+      typeof data.progress==="number"
+      ? Math.max(
+          0,
+          Math.min(
+            100,
+            data.progress
+          )
+        )
+      : 0;
+
+    progressInner.style.width =
+      p + "%";
+
+    progressPercent.textContent =
+      p.toFixed(1) + "%";
+
+    progressFile.textContent =
+      data.file || "Downloading...";
+  }
+
+  if(data.status==="done"){
+
+    progressInner.style.width =
+      "100%";
+
+    progressPercent.textContent =
+      "100%";
+  }
+
+  if(data.status==="ready"){
+
+    setTimeout(()=>{
+      progress.style.display =
+        "none";
+    },500);
+  }
+}
+
+
+/* =========================================================
+   LOAD MODEL
+========================================================= */
+
+async function loadModel(){
+
+  if(extractor){
+
+    setStatus(
+      "Model 已經載入。",
+      "ok"
+    );
+
+    return;
+  }
+
+  loadBtn.disabled =
+    true;
+
+  dtype.disabled =
+    true;
+
+  device.disabled =
+    true;
+
+  setStatus(
+    "正在準備模型...",
+    "warn"
+  );
+
+  let selectedDevice =
+    device.value;
+
+  const selectedDtype =
+    dtype.value;
+
+
+  /* Auto */
+
+  if(selectedDevice==="auto"){
+
+    const gpu =
+      await checkWebGPU();
+
+    selectedDevice =
+      gpu
+      ? "webgpu"
+      : "wasm";
+  }
+
+
+  /* Explicit WebGPU unavailable */
+
+  if(
+    selectedDevice==="webgpu" &&
+    !("gpu" in navigator)
+  ){
+
+    setStatus(
+      "瀏覽器不支援 WebGPU，請使用 Auto 或 WASM。",
+      "err"
+    );
+
+    loadBtn.disabled =
+      false;
+
+    dtype.disabled =
+      false;
+
+    device.disabled =
+      false;
+
+    return;
+  }
+
+
+  runtimeStatus.textContent =
+    selectedDevice.toUpperCase()
+    + " / "
+    + selectedDtype;
+
+
+  try{
+
+    setStatus(
+      "正在下載 / 載入模型...",
+      "warn"
+    );
+
+    extractor =
+      await pipeline(
+        "feature-extraction",
+        MODEL,
+        {
+          dtype:
+            selectedDtype,
+
+          device:
+            selectedDevice,
+
+          progress_callback:
+            progressCallback
+        }
+      );
+
+    currentDevice =
+      selectedDevice;
+
+    currentDtype =
+      selectedDtype;
+
+    runtimeStatus.textContent =
+      currentDevice.toUpperCase()
+      + " / "
+      + currentDtype;
+
+    usedDevice.textContent =
+      currentDevice.toUpperCase();
+
+    usedDtype.textContent =
+      currentDtype;
+
+    clearModelBtn.disabled =
+      false;
+
+    embedBtn.disabled =
+      false;
+
+    batchBtn.disabled =
+      false;
+
+    setStatus(
+      "Model 載入完成，可以開始測試。",
+      "ok"
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+    /*
+      Auto mode:
+      WebGPU 失敗後嘗試 WASM
+    */
+
+    if(
+      device.value==="auto" &&
+      selectedDevice==="webgpu"
+    ){
+
+      setStatus(
+        "WebGPU 載入失敗，嘗試 WASM...",
+        "warn"
+      );
+
+      try{
+
+        extractor =
+          await pipeline(
+            "feature-extraction",
+            MODEL,
+            {
+              dtype:
+                selectedDtype,
+
+              device:
+                "wasm",
+
+              progress_callback:
+                progressCallback
+            }
+          );
+
+        currentDevice =
+          "wasm";
+
+        currentDtype =
+          selectedDtype;
+
+        runtimeStatus.textContent =
+          "WASM / "
+          + currentDtype;
+
+        usedDevice.textContent =
+          "WASM";
+
+        usedDtype.textContent =
+          currentDtype;
+
+        clearModelBtn.disabled =
+          false;
+
+        embedBtn.disabled =
+          false;
+
+        batchBtn.disabled =
+          false;
+
+        setStatus(
+          "WASM fallback 載入完成。",
+          "ok"
+        );
+
+        return;
+
+      }catch(fallbackError){
+
+        console.error(
+          fallbackError
+        );
+      }
+    }
+
+    extractor =
+      null;
+
+    runtimeStatus.textContent =
+      "Load failed";
+
+    setStatus(
+      "模型載入失敗："
+      + (
+        error?.message ||
+        error
+      ),
+      "err"
+    );
+
+  }finally{
+
+    loadBtn.disabled =
+      false;
+
+    dtype.disabled =
+      false;
+
+    device.disabled =
+      false;
+  }
+}
+
+
+/* =========================================================
+   CLEAR MODEL
+========================================================= */
+
+function clearModel(){
+
+  extractor = null;
+
+  currentDevice = null;
+  currentDtype = null;
+
+  embeddingA = null;
+  embeddingB = null;
+
+  runtimeStatus.textContent =
+    "Not loaded";
+
+  usedDevice.textContent =
+    "—";
+
+  usedDtype.textContent =
+    "—";
+
+  dimension.textContent =
+    "—";
+
+  inferenceTime.textContent =
+    "—";
+
+  score.textContent =
+    "—";
+
+  vectorA.textContent =
+    "尚未產生 embedding";
+
+  vectorB.textContent =
+    "尚未產生 embedding";
+
+  clearModelBtn.disabled =
+    true;
+
+  embedBtn.disabled =
+    true;
+
+  batchBtn.disabled =
+    true;
+
+  setStatus(
+    "Model 已清除。",
+    "normal"
+  );
+}
+
+
+/* =========================================================
+   QWEN QUERY FORMAT
+========================================================= */
+
+function makeQuery(text){
+
+  return (
+    "Instruct: "
+    + instruction.value.trim()
+    + "\n"
+    + "Query: "
+    + text.trim()
+  );
+}
+
+
+/* =========================================================
+   COSINE
+========================================================= */
+
+function cosine(a,b){
+
+  if(a.length!==b.length)
+    throw new Error(
+      "Embedding dimension mismatch."
+    );
+
+  let dot = 0;
+  let aa = 0;
+  let bb = 0;
+
+  for(
+    let i=0;
+    i<a.length;
+    i++
+  ){
+
+    dot +=
+      a[i] * b[i];
+
+    aa +=
+      a[i] * a[i];
+
+    bb +=
+      b[i] * b[i];
+  }
+
+  const denominator =
+    Math.sqrt(aa)
+    *
+    Math.sqrt(bb);
+
+  if(
+    denominator===0
+  )
+    return 0;
+
+  return dot /
+    denominator;
+}
+
+
+/* =========================================================
+   VECTOR DISPLAY
+========================================================= */
+
+function vectorPreview(vector){
+
+  if(!vector)
+    return "尚未產生 embedding";
+
+  let result =
+    "Dimension: "
+    + vector.length
+    + "\n\n";
+
+  const count =
+    Math.min(
+      vector.length,
+      120
+    );
+
+  for(
+    let i=0;
+    i<count;
+    i++
+  ){
+
+    result +=
+      "[" +
+      i +
+      "] " +
+      Number(
+        vector[i]
+      ).toFixed(8)
+      + "\n";
+  }
+
+  if(
+    vector.length>count
+  ){
+
+    result +=
+      "\n... "
+      + (
+        vector.length-count
+      )
+      + " more values";
+  }
+
+  return result;
+}
+
+
+/* =========================================================
+   MAIN EMBEDDING
+========================================================= */
+
+async function generateEmbedding(){
+
+  if(!extractor){
+
+    alert(
+      "請先 Load Model。"
+    );
+
+    return;
+  }
+
+  const a =
+    textA.value.trim();
+
+  const b =
+    textB.value.trim();
+
+  if(!a || !b){
+
+    alert(
+      "Query 和 Document 都需要有內容。"
+    );
+
+    return;
+  }
+
+  embedBtn.disabled =
+    true;
+
+  batchBtn.disabled =
+    true;
+
+  score.textContent =
+    "…";
+
+  setStatus(
+    "正在產生 embeddings...",
+    "warn"
+  );
+
+  const start =
+    performance.now();
+
+  try{
+
+    /*
+      第一筆：
+      Query + Instruction
+
+      第二筆：
+      Document
+    */
+
+    const output =
+      await extractor(
+        [
+          makeQuery(a),
+          b
+        ],
+        {
+          pooling:
+            "last_token",
+
+          normalize:
+            true
+        }
+      );
+
+    const vectors =
+      output.tolist();
+
+    embeddingA =
+      vectors[0];
+
+    embeddingB =
+      vectors[1];
+
+    const similarity =
+      cosine(
+        embeddingA,
+        embeddingB
+      );
+
+    const elapsed =
+      performance.now()
+      - start;
+
+    score.textContent =
+      similarity.toFixed(6);
+
+    dimension.textContent =
+      embeddingA.length
+        .toLocaleString();
+
+    inferenceTime.textContent =
+      elapsed.toFixed(1)
+      + " ms";
+
+    usedDevice.textContent =
+      currentDevice.toUpperCase();
+
+    usedDtype.textContent =
+      currentDtype;
+
+    vectorA.textContent =
+      vectorPreview(
+        embeddingA
+      );
+
+    vectorB.textContent =
+      vectorPreview(
+        embeddingB
+      );
+
+    $("downloadA").disabled =
+      false;
+
+    $("downloadB").disabled =
+      false;
+
+    setStatus(
+      "Embedding 完成。",
+      "ok"
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+    score.textContent =
+      "—";
+
+    setStatus(
+      "Inference 失敗："
+      + (
+        error?.message ||
+        error
+      ),
+      "err"
+    );
+
+  }finally{
+
+    embedBtn.disabled =
+      false;
+
+    batchBtn.disabled =
+      false;
+  }
+}
+
+
+/* =========================================================
+   BATCH SEARCH
+========================================================= */
+
+async function batchSearch(){
+
+  if(!extractor){
+
+    alert(
+      "請先 Load Model。"
+    );
+
+    return;
+  }
+
+  const query =
+    textA.value.trim();
+
+  const documents =
+    batchInput.value
+      .split("\n")
+      .map(
+        x => x.trim()
+      )
+      .filter(Boolean);
+
+  if(!query){
+
+    alert(
+      "請先輸入 Query。"
+    );
+
+    return;
+  }
+
+  if(!documents.length){
+
+    alert(
+      "請至少輸入一個 Document。"
+    );
+
+    return;
+  }
+
+  batchBtn.disabled =
+    true;
+
+  embedBtn.disabled =
+    true;
+
+  setStatus(
+    "Batch embedding...",
+    "warn"
+  );
+
+  const start =
+    performance.now();
+
+  try{
+
+    const inputs = [
+      makeQuery(query),
+      ...documents
+    ];
+
+    const output =
+      await extractor(
+        inputs,
+        {
+          pooling:
+            "last_token",
+
+          normalize:
+            true
+        }
+      );
+
+    const vectors =
+      output.tolist();
+
+    const queryVector =
+      vectors[0];
+
+    const results =
+      documents.map(
+        (doc,index)=>({
+
+          text:doc,
+
+          score:
+            cosine(
+              queryVector,
+              vectors[index+1]
+            )
+        })
+      );
+
+    results.sort(
+      (a,b)=>
+        b.score-a.score
+    );
+
+    const container =
+      $("batchResults");
+
+    container.innerHTML =
+      "";
+
+    results.forEach(
+      (item,index)=>{
+
+        const row =
+          document.createElement(
+            "div"
+          );
+
+        row.className =
+          "batch-result";
+
+        const left =
+          document.createElement(
+            "div"
+          );
+
+        const number =
+          document.createElement(
+            "div"
+          );
+
+        number.className =
+          "batch-number";
+
+        number.textContent =
+          "#" + (index+1);
+
+        const text =
+          document.createElement(
+            "div"
+          );
+
+        text.className =
+          "batch-text";
+
+        text.textContent =
+          item.text;
+
+        left.appendChild(
+          number
+        );
+
+        left.appendChild(
+          text
+        );
+
+        const right =
+          document.createElement(
+            "div"
+          );
+
+        right.className =
+          "batch-score";
+
+        right.textContent =
+          item.score.toFixed(6);
+
+        row.appendChild(
+          left
+        );
+
+        row.appendChild(
+          right
+        );
+
+        container.appendChild(
+          row
+        );
+      }
+    );
+
+    const elapsed =
+      performance.now()
+      - start;
+
+    setStatus(
+      "Batch 完成："
+      + documents.length
+      + " documents / "
+      + elapsed.toFixed(1)
+      + " ms",
+      "ok"
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+    setStatus(
+      "Batch 失敗："
+      + (
+        error?.message ||
+        error
+      ),
+      "err"
+    );
+
+  }finally{
+
+    batchBtn.disabled =
+      false;
+
+    embedBtn.disabled =
+      false;
+  }
+}
+
+
+/* =========================================================
+   DOWNLOAD JSON
+========================================================= */
+
+function downloadJSON(
+  filename,
+  data
+){
+
+  const blob =
+    new Blob(
+      [
+        JSON.stringify(
+          data,
+          null,
+          2
+        )
+      ],
+      {
+        type:
+          "application/json"
+      }
+    );
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+  const a =
+    document.createElement(
+      "a"
+    );
+
+  a.href =
+    url;
+
+  a.download =
+    filename;
+
+  document.body.appendChild(
+    a
+  );
+
+  a.click();
+
+  a.remove();
+
+  URL.revokeObjectURL(
+    url
+  );
+}
+
+
+function downloadEmbedding(
+  vector,
+  filename,
+  text,
+  type
+){
+
+  if(!vector)
+    return;
+
+  downloadJSON(
+    filename,
+    {
+      model:MODEL,
+      type:type,
+      device:currentDevice,
+      dtype:currentDtype,
+      pooling:"last_token",
+      normalized:true,
+      dimension:vector.length,
+      text:text,
+      embedding:vector
+    }
+  );
+}
+
+
+/* =========================================================
+   BUTTON EVENTS
+========================================================= */
+
+loadBtn.addEventListener(
+  "click",
+  loadModel
+);
+
+clearModelBtn.addEventListener(
+  "click",
+  clearModel
+);
+
+embedBtn.addEventListener(
+  "click",
+  generateEmbedding
+);
+
+batchBtn.addEventListener(
+  "click",
+  batchSearch
+);
+
+
+$("swapBtn")
+.addEventListener(
+  "click",
+  ()=>{
+    const temp =
+      textA.value;
+
+    textA.value =
+      textB.value;
+
+    textB.value =
+      temp;
+  }
+);
+
+
+$("clearTextBtn")
+.addEventListener(
+  "click",
+  ()=>{
+    textA.value =
+      "";
+
+    textB.value =
+      "";
+
+    score.textContent =
+      "—";
+
+    dimension.textContent =
+      "—";
+
+    inferenceTime.textContent =
+      "—";
+
+    vectorA.textContent =
+      "尚未產生 embedding";
+
+    vectorB.textContent =
+      "尚未產生 embedding";
+
+    embeddingA =
+      null;
+
+    embeddingB =
+      null;
+
+    $("downloadA").disabled =
+      true;
+
+    $("downloadB").disabled =
+      true;
+
+    $("batchResults").innerHTML =
+      "";
+  }
+);
+
+
+$("downloadA")
+.addEventListener(
+  "click",
+  ()=>{
+    downloadEmbedding(
+      embeddingA,
+      "qwen3-query-embedding.json",
+      textA.value.trim(),
+      "query"
+    );
+  }
+);
+
+
+$("downloadB")
+.addEventListener(
+  "click",
+  ()=>{
+    downloadEmbedding(
+      embeddingB,
+      "qwen3-document-embedding.json",
+      textB.value.trim(),
+      "document"
+    );
+  }
+);
+
+
+/* =========================================================
+   INIT
+========================================================= */
+
+checkWebGPU();
+
+setStatus(
+  "Ready — 請按 Load Model。",
+  "normal"
+);
+
+</script>
+
+</body>
+</html>
